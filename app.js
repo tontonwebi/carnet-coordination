@@ -6,40 +6,98 @@
 
 'use strict';
 
-/* ------------------------- Verrou (mot de passe) ------------------------ */
-/* Protection "douce" côté navigateur : dissuade les curieux. Le mot de passe
-   n'est jamais stocké en clair, seulement son empreinte SHA-256 (salée). */
+/* ------------------- Stockage cloud (Cloudflare KV) + verrou ------------- */
+/* Les données vivent dans Cloudflare KV, via /api/data. Le mot de passe est
+   vérifié CÔTÉ SERVEUR : le code public ne contient que le "sel", jamais
+   l'empreinte attendue (variable secrète APP_PW_HASH). Le navigateur envoie
+   l'empreinte de ce que l'utilisateur tape ; le serveur décide. */
+const API_URL = '/api/data';
 const GATE_SALT = 'carnetcoord::v1::';
-const GATE_HASH = '0b750dac2c27644952c150034e020986dab408190c2524259e01c8d011ebe23f';
-const GATE_KEY = 'carnetUnlocked';
+const AUTH_KEY = 'carnetAuth';
+
+let cloudMode = false;         // vrai si l'API cloud répond et l'accès est validé
+let serverUpdatedAt = 0;       // horodatage de la version en base (anti-écrasement)
+let cloudSaving = false;
+let cloudDirty = false;
+let saveTimer = null;
+let pollTimer = null;
 
 async function sha256Hex(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
-function gateUnlocked() {
-  return sessionStorage.getItem(GATE_KEY) === '1' || localStorage.getItem(GATE_KEY) === '1';
+function authToken() { return sessionStorage.getItem(AUTH_KEY) || localStorage.getItem(AUTH_KEY) || ''; }
+function setAuthToken(h, remember) { (remember ? localStorage : sessionStorage).setItem(AUTH_KEY, h); }
+function clearAuthToken() { sessionStorage.removeItem(AUTH_KEY); localStorage.removeItem(AUTH_KEY); }
+
+function apiGet(token) {
+  return fetch(API_URL, { cache: 'no-store', headers: { 'x-auth': token || authToken() } });
 }
-function setupGate() {
+function apiPut(token) {
+  return fetch(API_URL, {
+    method: 'PUT',
+    headers: {
+      'content-type': 'application/json',
+      'x-auth': token || authToken(),
+      'x-base-updated': String(serverUpdatedAt)
+    },
+    body: JSON.stringify(data)
+  });
+}
+
+/* Applique un document reçu du serveur (ou {empty:true}). */
+function applyCloudDoc(d) {
+  if (d && !d.empty) { data = normalize(d); serverUpdatedAt = data.updatedAt || 0; }
+  else { data = normalize({}); serverUpdatedAt = 0; }
+  cloudMode = true;
+  persistLocal();
+  renderAll();
+  updateSyncUI('saved');
+}
+
+async function setupGate() {
   const gate = document.getElementById('gate');
   if (!gate) return;
-  if (gateUnlocked()) { gate.classList.add('hidden'); return; }
   const pwd = document.getElementById('gatePwd');
   const err = document.getElementById('gateError');
   const btn = document.getElementById('gateBtn');
   const remember = document.getElementById('gateRemember');
-  async function tryUnlock() {
-    const ok = (await sha256Hex(GATE_SALT + pwd.value)) === GATE_HASH;
-    if (ok) {
-      (remember.checked ? localStorage : sessionStorage).setItem(GATE_KEY, '1');
+
+  // Tentative automatique avec un jeton déjà mémorisé
+  if (authToken()) {
+    try {
+      const r = await apiGet();
+      if (r.status === 200) { applyCloudDoc(await r.json()); gate.classList.add('hidden'); startPolling(); return; }
+    } catch (e) { /* réseau indisponible : on affiche le verrou */ }
+    clearAuthToken();
+  }
+
+  async function submit() {
+    err.textContent = 'Vérification…';
+    let h;
+    try { h = await sha256Hex(GATE_SALT + pwd.value); }
+    catch { err.textContent = 'Erreur navigateur (contexte non sécurisé).'; return; }
+    let r;
+    try { r = await apiGet(h); }
+    catch { err.textContent = 'Serveur injoignable. Réessayez.'; return; }
+    if (r.status === 200) {
+      setAuthToken(h, remember.checked);
+      applyCloudDoc(await r.json());
       gate.classList.add('hidden');
+      startPolling();
+    } else if (r.status === 401) {
+      err.textContent = 'Mot de passe incorrect.'; pwd.value = ''; pwd.focus();
+    } else if (r.status === 503) {
+      err.textContent = 'Protection non configurée côté serveur (variable APP_PW_HASH).';
+    } else if (r.status === 500) {
+      err.textContent = 'Stockage non configuré côté serveur (binding CARNET_KV).';
     } else {
-      err.textContent = 'Mot de passe incorrect.';
-      pwd.value = ''; pwd.focus();
+      err.textContent = 'Erreur serveur (' + r.status + ').';
     }
   }
-  btn.addEventListener('click', tryUnlock);
-  pwd.addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+
+  btn.addEventListener('click', submit);
+  pwd.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
   setTimeout(() => pwd.focus(), 50);
 }
 
@@ -97,9 +155,6 @@ function exampleData() {
 
 /* ------------------------------- État ----------------------------------- */
 let data = loadInitial();
-let fileHandle = null;           // handle du fichier partagé (File System Access API)
-let lastLoadedUpdatedAt = 0;     // pour l'anti-écrasement
-let dirty = false;               // modifications non enregistrées dans le fichier
 const form = {};                 // sélections transitoires des groupes de boutons
 
 /* ----------------------------- Utilitaires ------------------------------ */
@@ -226,10 +281,73 @@ function persistLocal() {
 }
 function save() {
   data.updatedAt = Date.now();
-  dirty = true;
   persistLocal();
   renderAll();
-  updateFileState();
+  scheduleCloudSave();
+}
+function scheduleCloudSave() {
+  if (!cloudMode) { updateSyncUI('local'); return; }
+  cloudDirty = true;
+  updateSyncUI('pending');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(runCloudSave, 1000);
+}
+async function runCloudSave() {
+  if (!cloudMode || cloudSaving) return;
+  cloudSaving = true; cloudDirty = false;
+  updateSyncUI('saving');
+  try {
+    const r = await apiPut();
+    if (r.status === 409) {
+      const res = await r.json();
+      data = normalize(res.data); serverUpdatedAt = data.updatedAt || 0;
+      persistLocal(); renderAll();
+      updateSyncUI('saved');
+      toast('Données mises à jour ailleurs — rechargées.');
+      cloudDirty = false;
+    } else if (r.ok) {
+      const res = await r.json();
+      serverUpdatedAt = res.updatedAt || Date.now();
+      data.updatedAt = serverUpdatedAt;
+      updateSyncUI('saved');
+    } else if (r.status === 401) {
+      updateSyncUI('error'); toast('Session expirée — rechargez la page pour vous reconnecter.');
+    } else {
+      updateSyncUI('error');
+    }
+  } catch (e) { updateSyncUI('error'); }
+  cloudSaving = false;
+  if (cloudDirty) scheduleCloudSave();
+}
+function startPolling() {
+  if (pollTimer) return;
+  pollTimer = setInterval(pollCloud, 15000);
+}
+async function pollCloud() {
+  if (!cloudMode || cloudSaving || cloudDirty) return;
+  try {
+    const r = await apiGet();
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d && !d.empty && d.updatedAt && d.updatedAt > serverUpdatedAt) {
+      data = normalize(d); serverUpdatedAt = data.updatedAt;
+      persistLocal(); renderAll();
+      updateSyncUI('saved');
+    }
+  } catch (e) { /* silencieux */ }
+}
+function updateSyncUI(state) {
+  const el = document.getElementById('syncState');
+  if (!el) return;
+  const map = {
+    saved:   '☁️ Synchronisé',
+    saving:  '⏳ Enregistrement…',
+    pending: '✏️ Modifié…',
+    error:   '⚠️ Erreur de synchro',
+    local:   '💾 Local (non synchronisé)'
+  };
+  el.textContent = map[state] || '';
+  el.classList.toggle('dirty', state === 'error');
 }
 
 /* -------------------------- Navigation onglets -------------------------- */
@@ -554,7 +672,7 @@ function cycleQuestion(id) {
 }
 function setDecision(id, value) {
   const q = data.questions.find(x => x.id === id);
-  if (q) { q.decision = value; persistLocal(); dirty = true; updateFileState(); renderDashboard(); }
+  if (q) { q.decision = value; data.updatedAt = Date.now(); persistLocal(); scheduleCloudSave(); renderDashboard(); }
 }
 function deleteQuestion(id) { data.questions = data.questions.filter(q => q.id !== id); save(); }
 function renderQuestions() {
@@ -674,66 +792,17 @@ function copySynthese() {
   else { document.execCommand('copy'); toast('Copié ✔'); }
 }
 
-/* -------------------------- Fichier partagé ----------------------------- */
-const FS_SUPPORTED = 'showOpenFilePicker' in window;
-const PICKER_OPTS = { types: [{ description: 'Carnet de coordination (JSON)', accept: { 'application/json': ['.json'] } }] };
-
-async function openSharedFile() {
-  if (!FS_SUPPORTED) { toast('Navigateur non compatible — utilisez « Importer ».'); return; }
-  try {
-    const [h] = await window.showOpenFilePicker(PICKER_OPTS);
-    fileHandle = h;
-    const file = await h.getFile();
-    data = normalize(JSON.parse(await file.text()));
-    lastLoadedUpdatedAt = data.updatedAt || 0;
-    dirty = false;
-    persistLocal(); renderAll(); updateFileState();
-    toast('Fichier partagé chargé ✔');
-  } catch (e) { if (e.name !== 'AbortError') toast('Impossible d\'ouvrir le fichier.'); }
-}
-async function saveSharedFile() {
-  if (!FS_SUPPORTED) { toast('Navigateur non compatible — utilisez « Exporter ».'); return; }
-  try {
-    if (!fileHandle) {
-      fileHandle = await window.showSaveFilePicker(Object.assign({ suggestedName: 'carnet_coordination.json' }, PICKER_OPTS));
-    } else {
-      // Anti-écrasement : le fichier a-t-il changé depuis le dernier chargement ?
-      try {
-        const disk = JSON.parse(await (await fileHandle.getFile()).text());
-        if (disk.updatedAt && disk.updatedAt > lastLoadedUpdatedAt) {
-          if (!confirm('⚠️ Le fichier partagé a été modifié depuis votre dernier chargement.\nEnregistrer écrasera ces changements. Continuer ?')) return;
-        }
-      } catch (e) { /* fichier illisible : on écrase */ }
-    }
-    data.updatedAt = Date.now();
-    const w = await fileHandle.createWritable();
-    await w.write(JSON.stringify(data, null, 2));
-    await w.close();
-    lastLoadedUpdatedAt = data.updatedAt;
-    dirty = false;
-    persistLocal(); updateFileState();
-    toast('Enregistré dans le fichier ✔');
-  } catch (e) { if (e.name !== 'AbortError') toast('Échec de l\'enregistrement.'); }
-}
-function updateFileState() {
-  const el = document.getElementById('fileState');
-  if (fileHandle) {
-    el.textContent = '📄 ' + (fileHandle.name || 'fichier partagé') + (dirty ? ' — non enregistré' : ' — à jour');
-  } else {
-    el.textContent = dirty ? 'Données locales — pensez à enregistrer/exporter' : 'Données locales (non liées à un fichier)';
-  }
-  el.classList.toggle('dirty', dirty);
-}
-
+/* --------------------- Sauvegarde / restauration ------------------------ */
+/* Le stockage principal est le cloud (Cloudflare KV). Ces boutons servent de
+   filet de sécurité : télécharger une copie, restaurer, ou tout réinitialiser. */
 function exportData() {
-  data.updatedAt = Date.now();
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'carnet_coordination.json';
   a.click();
   URL.revokeObjectURL(a.href);
-  toast('Fichier exporté ✔');
+  toast('Sauvegarde téléchargée ✔');
 }
 function importData(e) {
   const file = e.target.files[0];
@@ -742,20 +811,19 @@ function importData(e) {
   reader.onload = () => {
     try {
       data = normalize(JSON.parse(reader.result));
-      lastLoadedUpdatedAt = data.updatedAt || 0;
-      dirty = false; fileHandle = null;
-      persistLocal(); renderAll(); updateFileState();
-      toast('Données importées ✔');
+      persistLocal(); renderAll();
+      scheduleCloudSave();
+      toast('Données restaurées ✔');
     } catch (err) { toast('Fichier illisible.'); }
   };
   reader.readAsText(file);
   e.target.value = '';
 }
 function resetData() {
-  if (!confirm('Réinitialiser toutes les données de cet appareil ? (Exportez d\'abord si besoin.)')) return;
+  if (!confirm('Réinitialiser toutes les données ? (Téléchargez une sauvegarde d\'abord si besoin.)')) return;
   data = normalize({});
-  fileHandle = null; lastLoadedUpdatedAt = 0; dirty = false;
-  persistLocal(); renderAll(); updateFileState();
+  persistLocal(); renderAll();
+  scheduleCloudSave();
   toast('Données réinitialisées.');
 }
 
@@ -788,9 +856,6 @@ function renderAll() {
 
 /* ---------------------------- Initialisation ---------------------------- */
 function init() {
-  // Verrou par mot de passe (avant tout le reste)
-  setupGate();
-
   // Navigation
   document.getElementById('nav').addEventListener('click', e => {
     const b = e.target.closest('button[data-tab]');
@@ -828,11 +893,10 @@ function init() {
   // Date du jour par défaut
   document.getElementById('sDate').value = todayISO();
 
-  // Verrouille l'état initial (exemple ou données migrées depuis la V1)
-  persistLocal();
-
+  // Rendu initial (derrière le verrou), puis authentification/chargement cloud
   renderAll();
-  updateFileState();
+  updateSyncUI('local');
+  setupGate();
 }
 
 // Expose les fonctions appelées depuis le HTML (onclick)
@@ -844,7 +908,7 @@ Object.assign(window, {
   addAstuce, deleteAstuce,
   addQuestion, cycleQuestion, setDecision, deleteQuestion,
   generateSynthese, copySynthese,
-  openSharedFile, saveSharedFile, exportData, importData, resetData,
+  exportData, importData, resetData,
   openModal, closeModal
 });
 

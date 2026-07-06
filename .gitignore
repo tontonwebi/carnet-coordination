@@ -5,6 +5,7 @@ Thumbs.db
 
 # Artefacts de test / dépendances éventuelles
 .playwright-mcp/
+.wrangler/
 node_modules/
 
 # Données réelles éventuelles (ne jamais publier)

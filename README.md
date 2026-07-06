@@ -1,113 +1,88 @@
-# 🌿 Carnet de coordination
+# 🌸 Carnet de coordination
 
-Application web simple et **gratuite** pour coordonner l'accompagnement d'un enfant entre
-la famille, l'IME et les intervenants (orthophoniste, psychomotricien…).
+Application web pour coordonner l'accompagnement d'un enfant entre la famille, l'IME et les
+intervenants (orthophoniste, psychomotricien…).
 
 - Suivi des **objectifs** avec graphiques d'évolution
 - **Tableau de bord** qui met en évidence les objectifs peu travaillés
-- Saisie **rapide par boutons** (peu de clavier)
-- Page **« Qui fait quoi ? »** et **calendrier** des réunions
-- **Synthèse PAP** générée automatiquement
-- Données dans **un seul fichier partagé** (Google Drive) — aucune base de données,
-  aucune inscription, rien n'est envoyé sur un serveur.
+- Saisie **rapide par boutons**
+- Page **« Qui fait quoi ? »**, **calendrier**, **synthèse PAP** automatique
+- **Stockage partagé en ligne** (Cloudflare KV) : tout le monde voit et modifie les mêmes
+  données, en direct — plus aucun fichier à s'échanger.
+- **Accès protégé par mot de passe**, vérifié côté serveur.
 
-Aucune dépendance : trois fichiers (`index.html`, `styles.css`, `app.js`) qui fonctionnent
-même hors-ligne.
+## Architecture
 
-> ℹ️ Cette version en ligne est **anonymisée** (données d'exemple génériques). Le prénom et
-> les vraies informations n'apparaissent que dans **votre** fichier privé sur Drive, jamais
-> sur la page publique.
-
----
-
-## 1. Utiliser l'application en local
-
-Double-cliquez sur **`index.html`** : l'appli s'ouvre dans le navigateur.
-Les données sont mémorisées dans le navigateur (localStorage) et peuvent être
-**exportées / importées** via la barre du bas.
-
-> 💡 Pour le vrai partage entre plusieurs personnes, voir la section **Fichier partagé**.
-
----
-
-## 2. Mettre à jour la version en ligne (GitHub Pages)
-
-Le site est publié via **GitHub Pages** à partir de la branche `main` de ce dépôt.
-Pour publier une modification :
-
-- **En ligne** : **Add file → Upload files**, glissez les fichiers modifiés, **Commit changes**.
-- **En ligne de commande** :
-  ```bash
-  git add -A
-  git commit -m "Mise à jour du carnet"
-  git push
-  ```
-
-GitHub Pages se met à jour automatiquement en ~1 minute.
-
-Adresse publique : `https://VOTRE-IDENTIFIANT.github.io/carnet-coordination/`
-
----
-
-## 3. Le fichier partagé (données communes)
-
-L'application est **statique** : elle ne stocke rien sur un serveur. Pour que tout le monde
-voie les **mêmes** données, on utilise **un seul fichier `carnet_coordination.json`** déposé
-sur un espace partagé (par ex. un dossier **Google Drive** synchronisé sur l'ordinateur).
-
-### Mise en place (une fois)
-1. Ouvrez l'appli, cliquez **⬇️ Exporter** → vous obtenez `carnet_coordination.json`.
-2. Déposez ce fichier dans le dossier Google Drive partagé.
-
-### Au quotidien (Chrome ou Edge sur ordinateur)
-- **📂 Ouvrir le fichier** → sélectionnez `carnet_coordination.json` sur le Drive.
-- Travaillez normalement (ajout de séances, objectifs…).
-- **💾 Enregistrer** → réécrit dans le **même** fichier partagé.
-
-L'appli **prévient** si le fichier a été modifié par quelqu'un d'autre depuis votre dernière
-ouverture (protection contre l'écrasement).
-
-### Sur mobile ou autres navigateurs
-Les boutons 📂/💾 ne sont pas disponibles : utilisez **⬇️ Exporter** et **⬆️ Importer**
-avec le fichier du Drive.
-
-> ⚠️ Bonne pratique : **une personne enregistre à la fois**. Ouvrez → modifiez →
-> enregistrez, plutôt que de laisser le fichier ouvert longtemps.
-
----
-
-## 4. Mot de passe
-
-L'accès à l'application est protégé par un **mot de passe partagé** (écran d'entrée).
-Il s'agit d'une protection « douce » côté navigateur : elle **dissuade les curieux** mais
-n'est pas un coffre-fort (une personne techniquement avertie peut lire le code public).
-C'est suffisant ici car la page publique ne contient que des **exemples anonymisés**.
-
-- Le mot de passe n'est **pas stocké en clair** : seule son empreinte SHA-256 est dans le code.
-- Option **« Se souvenir sur cet appareil »** pour ne pas le retaper à chaque visite.
-- Pour **changer le mot de passe** : il faut recalculer l'empreinte (constante `GATE_HASH`
-  dans `app.js`). Demandez-moi, c'est l'affaire de 2 minutes.
-
-Pour une **vraie** authentification gratuite (connexion par e-mail), voir Cloudflare Access.
-
-## 5. Confidentialité
-
-Les données restent **dans votre navigateur** et **dans votre fichier** (votre Drive).
-Rien n'est transmis à un serveur tiers par l'application. Le partage dépend uniquement
-de l'endroit où vous déposez le fichier `.json`.
-
-La page publique ne contient **aucune donnée réelle** : uniquement des exemples génériques.
-
----
-
-## 6. Structure des fichiers
-
-| Fichier | Rôle |
+| Élément | Rôle |
 |---|---|
-| `index.html` | Structure et onglets |
-| `styles.css` | Mise en forme (couleurs douces, responsive, impression) |
-| `app.js` | Logique : données, rendu, graphiques, fichier partagé |
-| `data.example.json` | Jeu de données d'exemple (importable pour tester) |
+| `index.html`, `styles.css`, `app.js` | L'application (statique) |
+| `functions/api/data.js` | Fonction Cloudflare Pages : lit/écrit les données dans KV (`/api/data`) |
+| **Cloudflare KV** | Base qui stocke le carnet (un seul document JSON) |
 
-Compatible avec les exports de la **V1** : importez l'ancien fichier `.json` via le bouton
-**⬆️ Importer**, il est converti automatiquement.
+⚠️ **Cette version nécessite Cloudflare Pages** (avec Functions + KV). Elle ne fonctionne
+**pas** sur un hébergement purement statique (GitHub Pages, Netlify Drop), qui ne peut pas
+exécuter la fonction serveur ni la base KV.
+
+---
+
+## Déploiement sur Cloudflare Pages
+
+### 1. Créer la base KV
+1. Tableau de bord Cloudflare → **Storage & Databases → KV** → **Create namespace**.
+2. Nom : `carnet_data` (ou ce que vous voulez) → **Add**.
+
+### 2. Déployer l'application
+- **Direct Upload** : Workers & Pages → votre projet Pages → **Create/Upload** le ZIP
+  (`carnet-coordination-netlify.zip`, qui contient bien le dossier `functions/`).
+- **ou via Git** si le dépôt est connecté (push automatique).
+
+### 3. Brancher la base + le mot de passe
+Dans le projet Pages → **Settings** :
+- **Functions → KV namespace bindings** → **Add binding** :
+  - Variable name : **`CARNET_KV`** (exactement)
+  - KV namespace : `carnet_data`
+  - (à faire pour **Production** ; idéalement aussi **Preview**)
+- **Environment variables (secrets)** → **Add** :
+  - Name : **`APP_PW_HASH`**
+  - Value : l'empreinte SHA-256 du mot de passe partagé *(fournie par votre développeur)*
+  - Type : **Secret** (chiffré)
+
+### 4. Redéployer
+Après avoir ajouté les bindings, **relancez un déploiement** (Deployments → Retry deployment,
+ou re-uploadez le ZIP) pour qu'ils prennent effet.
+
+➡️ Le site est prêt : `https://<votre-projet>.pages.dev` demande le mot de passe, puis
+charge les données partagées.
+
+---
+
+## Mot de passe
+
+- L'accès est protégé par un **mot de passe partagé**, **vérifié côté serveur** :
+  le code public ne contient **jamais** l'empreinte attendue (elle est dans la variable
+  secrète `APP_PW_HASH`). Le navigateur envoie seulement l'empreinte de ce qui est tapé.
+- Option **« Se souvenir sur cet appareil »**.
+- **Changer le mot de passe** : recalculer l'empreinte et mettre à jour `APP_PW_HASH`
+  (le « sel » utilisé est dans `app.js`, constante `GATE_SALT`). Demandez à votre développeur.
+
+Pour une protection encore plus forte (connexion par e-mail, journal des accès), on peut
+ajouter **Cloudflare Access** (gratuit jusqu'à 50 personnes) par-dessus.
+
+---
+
+## Confidentialité
+
+- Les données sont stockées dans **Cloudflare KV** (service tiers). À **cadrer côté RGPD**
+  avec l'IME si de vraies données nominatives y sont saisies.
+- Rien n'est envoyé ailleurs par l'application.
+- La barre du bas permet de **télécharger une sauvegarde** (`⬇️`) et de **restaurer** (`⬆️`)
+  à tout moment.
+
+---
+
+## Développement local
+
+```bash
+npx wrangler pages dev . --kv CARNET_KV --binding APP_PW_HASH=<empreinte>
+```
+Ouvre l'appli sur `http://localhost:8788` avec une base KV simulée en local.
