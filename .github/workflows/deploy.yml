@@ -1,0 +1,27 @@
+name: Déploiement Cloudflare Pages
+
+# Déploie automatiquement sur Cloudflare Pages à chaque push sur main.
+# Utilise wrangler (qui compile la fonction serveur functions/api/data.js),
+# vers le projet existant "carnet-coordination-capu" (bindings KV + APP_PW_HASH
+# déjà configurés côté Cloudflare, donc rien à reconfigurer ici).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # permet aussi un lancement manuel depuis l'onglet Actions
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Déployer sur Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: "800fa7212b85389aa5ee03c01e061373"
+          command: pages deploy . --project-name=carnet-coordination-capu --branch=main
