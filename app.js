@@ -819,13 +819,6 @@ function importData(e) {
   reader.readAsText(file);
   e.target.value = '';
 }
-function resetData() {
-  if (!confirm('Réinitialiser toutes les données ? (Téléchargez une sauvegarde d\'abord si besoin.)')) return;
-  data = normalize({});
-  persistLocal(); renderAll();
-  scheduleCloudSave();
-  toast('Données réinitialisées.');
-}
 
 /* ------------------------------- Modales -------------------------------- */
 function openModal(id) { document.getElementById(id).classList.add('open'); }
@@ -908,7 +901,7 @@ Object.assign(window, {
   addAstuce, deleteAstuce,
   addQuestion, cycleQuestion, setDecision, deleteQuestion,
   generateSynthese, copySynthese,
-  exportData, importData, resetData,
+  exportData, importData,
   openModal, closeModal
 });
 
