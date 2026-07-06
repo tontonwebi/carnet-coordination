@@ -1,0 +1,12 @@
+# Fichiers système / éditeur
+.DS_Store
+Thumbs.db
+*.log
+
+# Artefacts de test / dépendances éventuelles
+.playwright-mcp/
+node_modules/
+
+# Données réelles éventuelles (ne jamais publier)
+carnet_coordination.json
+donnees_*.json

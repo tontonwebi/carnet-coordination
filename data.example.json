@@ -1,0 +1,53 @@
+{
+  "updatedAt": 1751000000000,
+  "intervenants": [
+    { "id": "int-famille", "nom": "Famille", "role": "Famille", "couleur": "#7e8f74" },
+    { "id": "int-ortho", "nom": "Marie (orthophoniste)", "role": "Orthophoniste", "couleur": "#5b86a8" },
+    { "id": "int-ime", "nom": "IME", "role": "IME", "couleur": "#c9a94a" }
+  ],
+  "objectifs": [
+    {
+      "id": "obj-pod",
+      "titre": "Demander à boire avec le POD",
+      "domaine": "Communication",
+      "priorite": "Haute",
+      "pourquoi": "Développer la demande spontanée.",
+      "methode": "Proposer le POD à chaque repas.",
+      "criteres": "Utilise le POD sans guidance 3 fois sur 5."
+    },
+    {
+      "id": "obj-habillage",
+      "titre": "S'habiller seule le matin",
+      "domaine": "Autonomie",
+      "priorite": "Moyenne",
+      "pourquoi": "Gagner en autonomie.",
+      "methode": "Séquence en images.",
+      "criteres": "Met son manteau seule."
+    },
+    {
+      "id": "obj-jeu",
+      "titre": "Jouer à tour de rôle",
+      "domaine": "Habiletés sociales",
+      "priorite": "Basse",
+      "pourquoi": "Favoriser les interactions.",
+      "methode": "Jeux de société adaptés.",
+      "criteres": "Attend son tour."
+    }
+  ],
+  "suivi": [
+    { "id": "s1", "date": "2026-06-30", "intervenantId": "int-ortho", "objectifId": "obj-pod", "statut": "🟢 Réussi / progrès", "obs": "A demandé le verre avec le POD." },
+    { "id": "s2", "date": "2026-06-26", "intervenantId": "int-famille", "objectifId": "obj-pod", "statut": "🟡 En cours", "obs": "Guidance légère nécessaire." },
+    { "id": "s3", "date": "2026-06-22", "intervenantId": "int-ortho", "objectifId": "obj-pod", "statut": "🔴 Difficulté", "obs": "Peu d'initiation ce jour." },
+    { "id": "s4", "date": "2026-06-28", "intervenantId": "int-famille", "objectifId": "obj-habillage", "statut": "🟢 Réussi / progrès", "obs": "A mis son manteau seule." }
+  ],
+  "astuces": [
+    { "id": "a1", "date": "2026-06-29", "auteurId": "int-ortho", "objectifId": "obj-pod", "texte": "Laisser 10 secondes de silence avant de reformuler." }
+  ],
+  "questions": [
+    { "id": "q1", "texte": "Faut-il ajouter un pictogramme \"encore\" dans le POD ?", "quiId": "int-ortho", "statut": "Ouverte", "decision": "" }
+  ],
+  "reunions": [
+    { "id": "r1", "date": "2026-09-15", "titre": "Réunion PAP avec l'IME", "type": "PAP", "note": "Bilan trimestriel." },
+    { "id": "r2", "date": "2026-07-20", "titre": "Point d'équipe", "type": "Point", "note": "" }
+  ]
+}

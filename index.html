@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carnet de coordination</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>🌿 Carnet de coordination</h1>
+    <p>Un outil partagé pour suivre les objectifs, les séances, les astuces et préparer les synthèses PAP.</p>
+  </div>
+</header>
+
+<nav id="nav">
+  <button class="active" data-tab="dashboard">🏠 Tableau de bord</button>
+  <button data-tab="objectifs">🎯 Objectifs</button>
+  <button data-tab="suivi">📝 Suivi rapide</button>
+  <button data-tab="quifaitquoi">👥 Qui fait quoi ?</button>
+  <button data-tab="calendrier">📅 Calendrier</button>
+  <button data-tab="astuces">💡 Astuces</button>
+  <button data-tab="questions">❓ Questions</button>
+  <button data-tab="synthese">📊 Synthèse PAP</button>
+</nav>
+
+<main>
+
+  <!-- ======================= TABLEAU DE BORD ======================= -->
+  <section id="dashboard" class="active">
+    <div class="grid kpis">
+      <div class="card"><div class="kpi" id="kpiObj">0</div><div class="kpi-label">Objectifs suivis</div></div>
+      <div class="card"><div class="kpi" id="kpiObs">0</div><div class="kpi-label">Séances enregistrées</div></div>
+      <div class="card"><div class="kpi" id="kpiAst">0</div><div class="kpi-label">Astuces partagées</div></div>
+      <div class="card"><div class="kpi" id="kpiQ">0</div><div class="kpi-label">Questions ouvertes</div></div>
+    </div>
+
+    <h2 class="mt">⚠️ Objectifs peu travaillés</h2>
+    <p class="small">Aucune séance depuis
+      <select id="seuilJours" style="width:auto;display:inline-block;padding:4px 8px;margin:0">
+        <option value="7">7 jours</option>
+        <option value="14" selected>14 jours</option>
+        <option value="21">21 jours</option>
+        <option value="30">30 jours</option>
+      </select>
+    </p>
+    <div id="peuTravailles" class="grid"></div>
+
+    <div class="grid mt">
+      <div class="card good">
+        <h3>✅ Réussites récentes</h3>
+        <div id="reussites"></div>
+      </div>
+      <div class="card alert">
+        <h3>🔴 Points de vigilance</h3>
+        <div id="vigilance"></div>
+      </div>
+      <div class="card">
+        <h3>🧩 Décisions</h3>
+        <div id="decisions"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= OBJECTIFS ======================= -->
+  <section id="objectifs">
+    <div class="row">
+      <h2>🎯 Objectifs de travail</h2>
+      <div class="spacer"></div>
+      <button class="btn" onclick="openObjModal()">+ Ajouter un objectif</button>
+    </div>
+    <div id="objectiveList" class="grid mt"></div>
+  </section>
+
+  <!-- ======================= SUIVI RAPIDE ======================= -->
+  <section id="suivi">
+    <h2>📝 Suivi rapide d'une séance</h2>
+    <div class="card">
+      <label>Date</label>
+      <input type="date" id="sDate">
+
+      <label>Intervenant</label>
+      <div id="sIntervenantChoices" class="choice-group"></div>
+
+      <label>Objectif travaillé</label>
+      <div id="sObjectifChoices" class="choice-group"></div>
+
+      <label>Statut de la séance</label>
+      <div id="sStatutChoices" class="choice-group">
+        <button type="button" class="choice big status-vert" data-status="🟢">🟢 Réussi / progrès</button>
+        <button type="button" class="choice big status-orange" data-status="🟡">🟡 En cours</button>
+        <button type="button" class="choice big status-rouge" data-status="🔴">🔴 Difficulté</button>
+      </div>
+
+      <label>Observation courte <span class="small">(optionnel)</span></label>
+      <textarea id="sObs" placeholder="Ex : a utilisé le POD avec guidance légère."></textarea>
+
+      <div class="mt"><button class="btn" onclick="addSuivi()">Enregistrer la séance</button></div>
+    </div>
+
+    <h3 class="mt">Dernières séances</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Intervenant</th><th>Objectif</th><th>Statut</th><th>Observation</th><th></th></tr></thead>
+        <tbody id="suiviTable"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ======================= QUI FAIT QUOI ======================= -->
+  <section id="quifaitquoi">
+    <div class="row">
+      <h2>👥 Qui fait quoi ?</h2>
+      <div class="spacer"></div>
+      <button class="btn" onclick="openInterModal()">+ Ajouter un intervenant</button>
+    </div>
+
+    <div id="intervenantList" class="grid mt"></div>
+
+    <h3 class="mt">Matrice intervenant × objectif</h3>
+    <p class="small">✔ = travaillé lors d'au moins une séance. Le nombre indique combien de séances.</p>
+    <div class="table-wrap">
+      <table class="matrix">
+        <thead id="matrixHead"></thead>
+        <tbody id="matrixBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ======================= CALENDRIER ======================= -->
+  <section id="calendrier">
+    <div class="row">
+      <h2>📅 Réunions & échéances</h2>
+      <div class="spacer"></div>
+      <button class="btn" onclick="openReunionModal()">+ Ajouter</button>
+    </div>
+
+    <h3 class="mt">À venir</h3>
+    <div id="calFuture"></div>
+
+    <h3 class="mt">Passé</h3>
+    <div id="calPast"></div>
+  </section>
+
+  <!-- ======================= ASTUCES ======================= -->
+  <section id="astuces">
+    <h2>💡 Ce qui fonctionne</h2>
+    <div class="card">
+      <label>Auteur</label>
+      <div id="aAuteurChoices" class="choice-group"></div>
+
+      <label>Objectif concerné <span class="small">(optionnel)</span></label>
+      <div id="aObjectifChoices" class="choice-group"></div>
+
+      <label>Astuce / stratégie</label>
+      <textarea id="aTexte" placeholder="Ex : laisser 10 secondes de silence avant de reformuler."></textarea>
+
+      <div class="mt"><button class="btn" onclick="addAstuce()">Ajouter l'astuce</button></div>
+    </div>
+    <div id="astuceList" class="grid mt"></div>
+  </section>
+
+  <!-- ======================= QUESTIONS ======================= -->
+  <section id="questions">
+    <h2>❓ Questions à partager</h2>
+    <div class="card">
+      <label>Question / sujet</label>
+      <textarea id="qTexte" placeholder="Ex : faut-il ajouter un pictogramme spécifique dans le POD ?"></textarea>
+
+      <label>Qui peut répondre ? <span class="small">(optionnel)</span></label>
+      <div id="qQuiChoices" class="choice-group"></div>
+
+      <div class="mt"><button class="btn" onclick="addQuestion()">Ajouter la question</button></div>
+    </div>
+    <div class="table-wrap mt">
+      <table>
+        <thead><tr><th>Question</th><th>Qui répond ?</th><th>Statut</th><th></th></tr></thead>
+        <tbody id="qTable"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ======================= SYNTHÈSE PAP ======================= -->
+  <section id="synthese">
+    <h2>📊 Synthèse PAP / réunion</h2>
+    <div class="notice info">Cette page reprend automatiquement les objectifs, l'évolution, les points à discuter et les réunions à venir. Copiez-la dans un mail ou imprimez-la.</div>
+    <div class="row">
+      <button class="btn" onclick="generateSynthese()">Générer la synthèse</button>
+      <button class="btn secondary" onclick="copySynthese()">Copier</button>
+      <button class="btn secondary" onclick="window.print()">Imprimer</button>
+    </div>
+    <textarea id="syntheseText" class="mt" style="min-height:440px"></textarea>
+  </section>
+
+</main>
+
+<!-- ======================= BARRE D'ACTIONS FICHIER PARTAGÉ ======================= -->
+<div class="footer-actions no-print">
+  <span class="file-state" id="fileState">Données locales (non enregistrées dans un fichier)</span>
+  <button class="btn secondary smallbtn" onclick="openSharedFile()" title="Ouvrir le fichier .json partagé (Chrome/Edge)">📂 Ouvrir le fichier</button>
+  <button class="btn smallbtn" onclick="saveSharedFile()" title="Enregistrer dans le fichier partagé">💾 Enregistrer</button>
+  <button class="btn secondary smallbtn" onclick="exportData()">⬇️ Exporter</button>
+  <label class="btn secondary smallbtn" style="margin:0;cursor:pointer">⬆️ Importer<input type="file" accept=".json" style="display:none" onchange="importData(event)"></label>
+  <button class="btn ghost smallbtn" onclick="resetData()">🗑️ Réinitialiser</button>
+</div>
+
+<!-- ======================= MODALE OBJECTIF ======================= -->
+<div id="objModal" class="modal">
+  <div class="box">
+    <h2 id="objModalTitle">Ajouter un objectif</h2>
+    <input type="hidden" id="oId">
+    <label>Objectif</label>
+    <input id="oTitre" placeholder="Ex : Demander à boire avec le POD">
+
+    <label>Domaine</label>
+    <div id="oDomaineChoices" class="choice-group"></div>
+
+    <label>Priorité</label>
+    <div id="oPrioriteChoices" class="choice-group">
+      <button type="button" class="choice" data-prio="Haute">🔴 Haute</button>
+      <button type="button" class="choice" data-prio="Moyenne">🟡 Moyenne</button>
+      <button type="button" class="choice" data-prio="Basse">🟢 Basse</button>
+    </div>
+
+    <label>Pourquoi ? <span class="small">(optionnel)</span></label>
+    <textarea id="oPourquoi"></textarea>
+
+    <label>Comment chacun le travaille ? <span class="small">(optionnel)</span></label>
+    <textarea id="oMethode" placeholder="IME / famille / intervenants extérieurs..."></textarea>
+
+    <label>Critères de réussite <span class="small">(optionnel)</span></label>
+    <textarea id="oCriteres" placeholder="Ex : utilise le POD sans guidance 3 fois sur 5."></textarea>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="saveObjectif()">Enregistrer</button>
+      <button class="btn secondary" onclick="closeModal('objModal')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= MODALE INTERVENANT ======================= -->
+<div id="interModal" class="modal">
+  <div class="box">
+    <h2 id="interModalTitle">Ajouter un intervenant</h2>
+    <input type="hidden" id="iId">
+    <label>Nom</label>
+    <input id="iNom" placeholder="Ex : Marie (orthophoniste)">
+
+    <label>Rôle</label>
+    <div id="iRoleChoices" class="choice-group"></div>
+
+    <label>Couleur</label>
+    <div id="iCouleurChoices" class="choice-group"></div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="saveIntervenant()">Enregistrer</button>
+      <button class="btn secondary" onclick="closeModal('interModal')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= MODALE RÉUNION ======================= -->
+<div id="reunionModal" class="modal">
+  <div class="box">
+    <h2 id="reunionModalTitle">Ajouter une réunion / échéance</h2>
+    <input type="hidden" id="rId">
+    <label>Date</label>
+    <input type="date" id="rDate">
+
+    <label>Titre</label>
+    <input id="rTitre" placeholder="Ex : Réunion PAP avec l'IME">
+
+    <label>Type</label>
+    <div id="rTypeChoices" class="choice-group">
+      <button type="button" class="choice" data-type="PAP">📊 Réunion PAP</button>
+      <button type="button" class="choice" data-type="Point">🗓️ Point d'équipe</button>
+      <button type="button" class="choice" data-type="Échéance">⏰ Échéance</button>
+    </div>
+
+    <label>Note <span class="small">(optionnel)</span></label>
+    <textarea id="rNote"></textarea>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="saveReunion()">Enregistrer</button>
+      <button class="btn secondary" onclick="closeModal('reunionModal')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
