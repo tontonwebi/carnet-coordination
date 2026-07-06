@@ -5,35 +5,35 @@
    ========================================================================== */
 
 :root {
-  --bg: #f7f4ef;
-  --bg-2: #f1ede4;
+  --bg: #fdf5f8;
+  --bg-2: #f8ebf1;
   --card: #ffffff;
-  --text: #2f2f2f;
-  --muted: #6b6b6b;
-  --line: #e8e2d6;
+  --text: #3a2f34;
+  --muted: #8a7580;
+  --line: #f0dde6;
 
-  --primary: #7e8f74;
-  --primary-dark: #5e6d56;
-  --primary-soft: #edf1ea;
-  --accent: #d9c7a3;
+  --primary: #d67ea1;
+  --primary-dark: #b25f83;
+  --primary-soft: #fbe8f0;
+  --accent: #c9a9d4;
 
-  --soft: #edf1ea;
-  --danger: #f3d4d4;
-  --danger-strong: #c9736f;
-  --warn: #f5e7b8;
-  --warn-strong: #c9a94a;
+  --soft: #f7e9f0;
+  --danger: #f7d1cf;
+  --danger-strong: #cf6f66;
+  --warn: #f6e7bf;
+  --warn-strong: #caa94a;
   --success: #d9ead3;
   --success-strong: #6f9c5f;
-  --blue: #d9eaf7;
+  --blue: #dbe8f5;
   --blue-strong: #5b86a8;
 
-  /* couleurs de domaines */
-  --com: #eadcf5;
-  --auto: #dcebf5;
-  --social: #def0df;
-  --moteur: #f4ead2;
-  --bien: #f5dede;
-  --comport: #e7e2d3;
+  /* couleurs de domaines (pastels harmonisés) */
+  --com: #ecd9f5;
+  --auto: #d9e6f5;
+  --social: #dcf0e2;
+  --moteur: #f8e6d6;
+  --bien: #f9dae4;
+  --comport: #ece0e8;
 
   --radius: 16px;
   --radius-sm: 10px;
@@ -53,7 +53,7 @@ body {
 
 /* ---------- Header ---------- */
 header {
-  background: linear-gradient(120deg, var(--primary), #a8b59d);
+  background: linear-gradient(135deg, #db86a8 0%, #c9a6d6 100%);
   color: #fff;
   padding: 22px 18px;
 }
@@ -72,7 +72,7 @@ nav button {
   white-space: nowrap; cursor: pointer; font-weight: 600; color: #35402f;
   font-size: 14px; transition: background .15s, color .15s;
 }
-nav button:hover { background: #e2e8dd; }
+nav button:hover { background: #f2dce8; }
 nav button.active { background: var(--primary); color: #fff; }
 
 /* ---------- Layout ---------- */
@@ -160,7 +160,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary-sof
 table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; }
 th, td { border-bottom: 1px solid var(--line); padding: 10px; text-align: left; font-size: 14px; vertical-align: top; }
 th { background: var(--soft); font-size: 13px; }
-tbody tr:hover { background: #faf8f3; }
+tbody tr:hover { background: #fdf3f8; }
 
 /* ---------- Statuts ---------- */
 .status { font-weight: 700; border-radius: 999px; padding: 4px 10px; display: inline-block; font-size: 13px; white-space: nowrap; }
@@ -171,7 +171,7 @@ tbody tr:hover { background: #faf8f3; }
 /* ---------- Notices ---------- */
 /* Encadré doux (pas de bordure latérale épaisse) : fond teinté + bordure fine. */
 .notice {
-  background: #fff8e8; border: 1px solid #efe3c2;
+  background: #fdeef5; border: 1px solid #f4d7e5;
   padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; font-size: 14px;
 }
 .notice.info { background: var(--blue); border-color: #c4dcee; }
@@ -244,7 +244,7 @@ hr { border: none; border-top: 1px solid var(--line); margin: 14px 0; }
 /* ---------- Toast ---------- */
 .toast {
   position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%);
-  background: #35402f; color: #fff; padding: 10px 18px; border-radius: 999px;
+  background: #5a3448; color: #fff; padding: 10px 18px; border-radius: 999px;
   font-size: 14px; z-index: 200; opacity: 0; pointer-events: none; transition: opacity .25s;
 }
 .toast.show { opacity: 1; }

@@ -14,7 +14,7 @@ const DOMAINES = [
   'Motricité', 'Comportements adaptatifs', 'Bien-être'
 ];
 const ROLES = ['Famille', 'IME', 'Orthophoniste', 'Psychomotricien', 'Éducateur', 'Enseignant', 'Autre'];
-const COULEURS = ['#7e8f74', '#5b86a8', '#c9736f', '#c9a94a', '#9b7bb8', '#6f9c5f', '#c98a5b', '#7d8ca3'];
+const COULEURS = ['#d67ea1', '#b98fd0', '#e39aa8', '#c9849c', '#8fb0d6', '#e0a86f', '#7bb59a', '#c58fb0'];
 
 const STATUT_COLORS = { 3: '#6f9c5f', 2: '#c9a94a', 1: '#c9736f' };
 
