@@ -6,6 +6,43 @@
 
 'use strict';
 
+/* ------------------------- Verrou (mot de passe) ------------------------ */
+/* Protection "douce" côté navigateur : dissuade les curieux. Le mot de passe
+   n'est jamais stocké en clair, seulement son empreinte SHA-256 (salée). */
+const GATE_SALT = 'carnetcoord::v1::';
+const GATE_HASH = '0b750dac2c27644952c150034e020986dab408190c2524259e01c8d011ebe23f';
+const GATE_KEY = 'carnetUnlocked';
+
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function gateUnlocked() {
+  return sessionStorage.getItem(GATE_KEY) === '1' || localStorage.getItem(GATE_KEY) === '1';
+}
+function setupGate() {
+  const gate = document.getElementById('gate');
+  if (!gate) return;
+  if (gateUnlocked()) { gate.classList.add('hidden'); return; }
+  const pwd = document.getElementById('gatePwd');
+  const err = document.getElementById('gateError');
+  const btn = document.getElementById('gateBtn');
+  const remember = document.getElementById('gateRemember');
+  async function tryUnlock() {
+    const ok = (await sha256Hex(GATE_SALT + pwd.value)) === GATE_HASH;
+    if (ok) {
+      (remember.checked ? localStorage : sessionStorage).setItem(GATE_KEY, '1');
+      gate.classList.add('hidden');
+    } else {
+      err.textContent = 'Mot de passe incorrect.';
+      pwd.value = ''; pwd.focus();
+    }
+  }
+  btn.addEventListener('click', tryUnlock);
+  pwd.addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+  setTimeout(() => pwd.focus(), 50);
+}
+
 /* ----------------------------- Constantes ------------------------------- */
 const STORAGE_KEY = 'carnetCoordV2';
 
@@ -751,6 +788,9 @@ function renderAll() {
 
 /* ---------------------------- Initialisation ---------------------------- */
 function init() {
+  // Verrou par mot de passe (avant tout le reste)
+  setupGate();
+
   // Navigation
   document.getElementById('nav').addEventListener('click', e => {
     const b = e.target.closest('button[data-tab]');

@@ -51,6 +51,29 @@ body {
   line-height: 1.45;
 }
 
+/* ---------- Verrou (écran mot de passe) ---------- */
+.gate {
+  position: fixed; inset: 0; z-index: 1000;
+  background: linear-gradient(135deg, #db86a8 0%, #c9a6d6 100%);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.gate.hidden { display: none; }
+.gate-box {
+  background: #fff; border-radius: 20px; padding: 28px 24px;
+  max-width: 380px; width: 100%; text-align: center; box-shadow: var(--shadow-lg);
+}
+.gate-emoji { font-size: 42px; line-height: 1; }
+.gate-box h1 { font-size: 22px; margin: 8px 0 4px; }
+.gate-box p { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+.gate-box input[type=password] { text-align: center; font-size: 16px; }
+.gate-error { color: var(--danger-strong); font-size: 13px; min-height: 18px; margin: 8px 0; font-weight: 600; }
+.gate-box .btn { width: 100%; margin-top: 4px; }
+.gate-remember {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin-top: 14px; font-size: 13px; color: var(--muted); font-weight: 400;
+}
+.gate-remember input { width: auto; margin: 0; }
+
 /* ---------- Header ---------- */
 header {
   background: linear-gradient(135deg, #db86a8 0%, #c9a6d6 100%);

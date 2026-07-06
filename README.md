@@ -76,7 +76,21 @@ avec le fichier du Drive.
 
 ---
 
-## 4. Confidentialité
+## 4. Mot de passe
+
+L'accès à l'application est protégé par un **mot de passe partagé** (écran d'entrée).
+Il s'agit d'une protection « douce » côté navigateur : elle **dissuade les curieux** mais
+n'est pas un coffre-fort (une personne techniquement avertie peut lire le code public).
+C'est suffisant ici car la page publique ne contient que des **exemples anonymisés**.
+
+- Le mot de passe n'est **pas stocké en clair** : seule son empreinte SHA-256 est dans le code.
+- Option **« Se souvenir sur cet appareil »** pour ne pas le retaper à chaque visite.
+- Pour **changer le mot de passe** : il faut recalculer l'empreinte (constante `GATE_HASH`
+  dans `app.js`). Demandez-moi, c'est l'affaire de 2 minutes.
+
+Pour une **vraie** authentification gratuite (connexion par e-mail), voir Cloudflare Access.
+
+## 5. Confidentialité
 
 Les données restent **dans votre navigateur** et **dans votre fichier** (votre Drive).
 Rien n'est transmis à un serveur tiers par l'application. Le partage dépend uniquement
@@ -86,7 +100,7 @@ La page publique ne contient **aucune donnée réelle** : uniquement des exemple
 
 ---
 
-## 5. Structure des fichiers
+## 6. Structure des fichiers
 
 | Fichier | Rôle |
 |---|---|

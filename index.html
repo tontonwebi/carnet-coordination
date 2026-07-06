@@ -8,6 +8,19 @@
 </head>
 <body>
 
+<!-- ======================= VERROU (mot de passe partagé) ======================= -->
+<div id="gate" class="gate">
+  <div class="gate-box">
+    <div class="gate-emoji">🌸</div>
+    <h1>Carnet de coordination</h1>
+    <p>Espace protégé. Entrez le mot de passe partagé pour continuer.</p>
+    <input type="password" id="gatePwd" placeholder="Mot de passe" autocomplete="current-password">
+    <div id="gateError" class="gate-error"></div>
+    <button class="btn" id="gateBtn">Entrer</button>
+    <label class="gate-remember"><input type="checkbox" id="gateRemember"> Se souvenir sur cet appareil</label>
+  </div>
+</div>
+
 <header>
   <div class="wrap">
     <h1>🌸 Carnet de coordination</h1>
